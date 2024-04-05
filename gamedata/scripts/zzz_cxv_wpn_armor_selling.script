@@ -1,0 +1,182 @@
+get_config = zzz_cxv_wpn_armor_selling_mcm.get_config
+vendor_checking = get_config("vanilla_gamma")
+can_sell_armor = get_config("sell_armors")
+can_sell_weapons = get_config("sell_weapons")
+condition_threshold = get_config("condition_threshold")
+has_sigmund = get_config("sigmud_part_threshold")
+
+TradeStatus = utils_item.get_item_trade_status
+function utils_item.get_item_trade_status(obj, profile)
+	
+	if not (obj and profile) then
+		return
+	end
+	
+	local sec = obj:section()
+	local note = 4
+	
+	-- Helps GAMMA to catch any stray armor or weapons
+	if profile.mode == 2 and vendor_checking then	-- vendor checking for armor or weapons and "hiding" them
+		if IsOutfit(obj) or IsHeadgear(obj) or (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+			printf("[CXV] Weapon or armor found in trader's inventory (%s)! Being hidden...", sec)
+			note = 3
+			return note
+		end
+		
+		-- use normal status checking for all other vendor items
+		return TradeStatus(obj, profile)
+	end
+	
+	-- if selling options are off, these will catch all armors and weapons from the player and make them unable to be sold
+	if not can_sell_armor then
+		if IsOutfit(obj) or IsHeadgear(obj) then
+			note = 2
+			return note
+		end
+	end
+	
+	if not can_sell_weapons then
+		if (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+			note = 2
+			return note
+		end
+	end
+	
+	-- Armor/Weapon trading commence
+	-- No armor or weapon trade for anyone that doesn't buy repair items (gun_oil to be more precise)
+	-- Ensures only mechanics, general traders, and trashers (that includes Nimble) can buy armors and weapons
+	local cfg = trade_manager.get_trade_cfg( profile.cfg )
+	local list = profile.list
+	if not (cfg and list) then
+		return
+	end
+	if cfg:line_exist(list, "gun_oil") and (not cfg:r_string_ex(list,"gun_oil")) then
+		-- printf("[CXV] Trader is not valid candidate for buying weapons or armor...")
+		if IsOutfit(obj) or IsHeadgear(obj) then
+			note = 2
+			return note
+		elseif (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+			note = 2
+			return note
+		end
+		return TradeStatus(obj, profile)
+	end
+	
+	-- Armor checking
+	if (IsOutfit(obj) or IsHeadgear(obj)) and can_sell_armor then
+		printf("[CXV] Checking if armor (%s) is good enough to be sold...", sec)
+		if obj:condition() < (condition_threshold * 0.01) then
+			printf("[CXV] Armor (%s) is too damaged!", sec)
+			note = 2
+		else
+			printf("Armor (%s) is good enough to be sold!", sec)
+			note = 4
+		end
+		
+		return note
+	end
+	
+	-- Weapon checking
+	if not can_sell_weapons then return TradeStatus(obj, profile) end
+	if not (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) or (obj:parent() and obj:parent():id() ~= 0) then return TradeStatus(obj, profile) end
+	
+	printf("[CXV] Checking if weapon (%s) is good enough to be sold...", sec)
+	if obj:condition() < (condition_threshold * 0.01) then
+		note = 2
+		return note
+	end
+	
+	printf("[CXV] Checking parts for %s", sec)
+	local parts = se_load_var(obj:id(), obj:name(), "parts")
+	if not parts then
+		printf("[CXV] Weapon (%s) has no parts, but weapon selling is enabled. Letting it through...", sec)
+		note = 4
+		return note
+	end
+	
+	printf("[CXV] Checking if weapon's (%s) parts are good enough to be sold...", sec)
+	local threshold = a_arti_jamming_mcm.get_config("minpart") or 60	-- default value in case someone is playing GAMMA w/ newer WPO
+	
+	-- SIGMUND Patch
+	if dynamic_repair_icons_mcm and sigmud_part_threshold then
+		threshold = tonumber(ui_mcm.get('dynamicrepairicons/yellow'))
+	end
+	
+	for k,v in pairs(parts) do
+		if string.find(k, "prt_w_") and v < threshold then
+			printf("[CXV] Weapon's (%s) parts are too damaged! | Threshold: %s", sec, threshold)
+			note = 2
+			return note
+		end
+	end
+	
+	printf("[CXV] Weapon (%s) is good enough to be sold!", sec)
+	note = 4
+	return note
+end
+
+base_check_trade = utils_ui.UICellItem.Check_TradeMode
+utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
+	
+	if (self.showcase ~= 0) then
+		return false
+	end
+	
+	-- Reset
+	self.flags.value = nil
+	self.flags.value_str = nil
+	self.flags.note = nil
+	self.flags.no_trade = nil
+	self.flags.note_str = nil
+	
+	local profile = self.container.trade_profile
+	if not (profile and profile.mode) then
+		return false
+	end
+		
+	local status = utils_item.get_item_trade_status(obj, profile)
+	if status == 4 then
+		local cost
+		if ((IsOutfit(obj) or IsHeadgear(obj)) and can_sell_armor) or (IsWeapon(obj) and can_sell_weapons) then
+			printf("[CXV] Armor/Weapon is being given a price: %s", obj:section())
+			
+			-- Using the price calculations from utils_item.get_item_cost
+			local exponent = profile.cond_exponent
+			local discount = profile.discount
+			cost = obj:cost() * (discount or 1) * math.pow((obj:condition() * 0.9 + 0.1), exponent > 0 and exponent or 0.75)
+		else
+			cost = utils_item.get_item_cost(obj, profile)
+		end
+		
+		self.flags.value = math.floor(cost)
+		self.flags.value_str = (game.translate_string("st_base_cost") .. ": " .. math.floor(cost) .. " RU")
+		
+	elseif status == 3 or (not status) then
+		self:Print(nil, "Removed [%s] for NPC. Not proper item", sec)
+		return true
+		
+	elseif status == 1 or status == 2 then
+		self.flags.note = status
+		self.flags.no_trade = true
+		self.flags.note_str = game.translate_string("st_no_trade_tip_" .. status)
+	end
+	
+	return false
+end
+
+function on_option_change()
+	if ui_mcm then
+	
+		vendor_checking = get_config("vanilla_gamma")
+		can_sell_armor = get_config("sell_armors")
+		can_sell_weapons = get_config("sell_weapons")
+		condition_threshold = get_config("condition_threshold")
+		has_sigmund = get_config("sigmud_part_threshold")
+		
+	end
+end
+
+function on_game_start()
+	RegisterScriptCallback("on_option_change",on_option_change)
+	on_option_change()
+end

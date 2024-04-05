@@ -1,0 +1,25 @@
+local defaults = {
+	["vanilla_gamma"] = true,
+	["sell_armors"] = false,
+	["sell_weapons"] = false,
+	["condition_threshold"] = 95,
+	["sigmud_part_threshold"] = false,
+}
+
+function get_config(key)
+    if ui_mcm then return ui_mcm.get("wpn_armor_selling/"..key) else return defaults[key] end
+end
+
+function on_mcm_load()
+	local options = {
+		id = "wpn_armor_selling", sh = true, gr = {
+			{ id = "title", type = "slide", link = "ui_options_slider_player", text = "ui_mcm_wpn_armor_selling_title", size = { 512, 50 }, spacing = 20 },
+			{ id = "vanilla_gamma", 	  	type = "check", val = 1, 								def = true},
+			{ id = "sell_armors", 	  		type = "check", val = 1, 								def = false},
+			{ id = "sell_weapons", 		  	type = "check", val = 1, 								def = false},
+			{ id = "condition_threshold", 	type = "track", val = 2, min = 1, max = 99, step = 1,  	def = 95 },
+			{ id = "sigmud_part_threshold", type = "check", val = 1, 								def = false},
+		}
+	}
+	return options
+end

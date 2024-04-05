@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="ui_mcm_menu_wpn_armor_selling">
+		<text>Weapon and Armor Selling</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_title">
+		<text>GAMMA Weapon and Armor Selling Configuration</text>
+	</string>
+	
+	<string id="ui_mcm_wpn_armor_selling_vanilla_gamma">
+		<text>Enable GAMMA Vendor Checking</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_vanilla_gamma_desc">
+		<text>If enabled, this will hide any armor or weapons in a vendor's inventory.\n 
+		\nTurn this only if you are not using any mod that enables weapon and armor trading from vendors.</text>
+	</string>
+	
+	<string id="ui_mcm_wpn_armor_selling_sell_armors">
+		<text>Sell Armor and Headgear?</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_sell_armors_desc">
+		<text>Turning this on will allow you to sell armor and headgear if they are above your Condition Threshold setting below.</text>
+	</string>
+	
+	<string id="ui_mcm_wpn_armor_selling_sell_weapons">
+		<text>Sell Weapons?</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_sell_weapons_desc">
+		<text>Turning this on will allow you to sell weapons if they are above your Condition Threshold setting below, and your weapon parts are above your "Sale parts condition minimum" setting in your Weapon Parts Overhaul MCM settings.</text>
+	</string>
+	
+	
+	<string id="ui_mcm_wpn_armor_selling_condition_threshold">
+		<text>Condition Threshold</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_condition_threshold_desc">
+		<text>This is the minimum condition required in order to sell weapons, armor, or headgear.</text>
+	</string>
+	
+	<string id="ui_mcm_wpn_armor_selling_sigmud_part_threshold">
+		<text>SIGMUND Underhaul Compatability?</text>
+	</string>
+	<string id="ui_mcm_wpn_armor_selling_sigmud_part_threshold_desc">
+		<text>Turn this on if you are using the SIGMUND Underhaul mod.\n 
+		\nYour weapon's parts will be checked by your "Maintenance threshold" setting inside of WPO SIGMUND Repair Settings instead of standard WPO's value</text>
+	</string>
+	
+	
+</string_table>
