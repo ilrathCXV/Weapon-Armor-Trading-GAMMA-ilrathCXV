@@ -1,3 +1,5 @@
+## THIS MOD IS CURRENTLY NOT FULLY FUNCTIONAL - WAIT UNITL NEXT UPDATE FOR MORE INFORMATION
+
 **This mod is made for use with the S.T.A.L.K.E.R. G.A.M.M.A. modpack. Use with any other modpack will not be supported.**
 
 ## Description
