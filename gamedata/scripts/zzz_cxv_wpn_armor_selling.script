@@ -30,14 +30,14 @@ function utils_item.get_item_trade_status(obj, profile)
 	-- if selling options are off, these will catch all armors and weapons from the player and make them unable to be sold
 	if not can_sell_armor then
 		if IsOutfit(obj) or IsHeadgear(obj) then
-			note = 2
+			note = 1
 			return note
 		end
 	end
 	
 	if not can_sell_weapons then
 		if (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
-			note = 2
+			note = 1
 			return note
 		end
 	end
