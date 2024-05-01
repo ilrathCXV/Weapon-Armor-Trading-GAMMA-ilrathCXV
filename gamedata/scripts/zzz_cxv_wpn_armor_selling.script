@@ -13,34 +13,35 @@ function utils_item.get_item_trade_status(obj, profile)
 	end
 	
 	local sec = obj:section()
-	local note = 4
 	
 	-- Helps GAMMA to catch any stray armor or weapons
 	if profile.mode == 2 and vendor_checking then	-- vendor checking for armor or weapons and "hiding" them
 		if IsOutfit(obj) or IsHeadgear(obj) or (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
 			printf("[CXV] Weapon or armor found in trader's inventory (%s)! Being hidden...", sec)
-			note = 3
-			return note
+			return 3
 		end
 		
 		-- use normal status checking for all other vendor items
 		return TradeStatus(obj, profile)
 	end
 	
-	-- if selling options are off, these will catch all armors and weapons from the player and make them unable to be sold
-	if not can_sell_armor then
-		if IsOutfit(obj) or IsHeadgear(obj) then
-			note = 1
-			return note
+	if profile.mode == 1 then
+	
+		-- if selling options are off, these will catch all armors and weapons from the player and make them unable to be sold
+		if not can_sell_armor then
+			if IsOutfit(obj) or IsHeadgear(obj) then
+				return 1
+			end
 		end
+		
+		if not can_sell_weapons then
+			if (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+				return 1
+			end
+		end
+	
 	end
 	
-	if not can_sell_weapons then
-		if (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
-			note = 1
-			return note
-		end
-	end
 	
 	-- Armor/Weapon trading commence
 	-- No armor or weapon trade for anyone that doesn't buy repair items (gun_oil to be more precise)
@@ -53,11 +54,9 @@ function utils_item.get_item_trade_status(obj, profile)
 	if cfg:line_exist(list, "gun_oil") and (not cfg:r_string_ex(list,"gun_oil")) then
 		-- printf("[CXV] Trader is not valid candidate for buying weapons or armor...")
 		if IsOutfit(obj) or IsHeadgear(obj) then
-			note = 2
-			return note
+			return 2
 		elseif (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
-			note = 2
-			return note
+			return 2
 		end
 		return TradeStatus(obj, profile)
 	end
@@ -67,10 +66,10 @@ function utils_item.get_item_trade_status(obj, profile)
 		printf("[CXV] Checking if armor (%s) is good enough to be sold...", sec)
 		if obj:condition() < (condition_threshold * 0.01) then
 			printf("[CXV] Armor (%s) is too damaged!", sec)
-			note = 2
+			return 2
 		else
 			printf("Armor (%s) is good enough to be sold!", sec)
-			note = 4
+			return 4
 		end
 		
 		return note
@@ -82,16 +81,14 @@ function utils_item.get_item_trade_status(obj, profile)
 	
 	printf("[CXV] Checking if weapon (%s) is good enough to be sold...", sec)
 	if obj:condition() < (condition_threshold * 0.01) then
-		note = 2
-		return note
+		return 2
 	end
 	
 	printf("[CXV] Checking parts for %s", sec)
 	local parts = se_load_var(obj:id(), obj:name(), "parts")
 	if not parts then
 		printf("[CXV] Weapon (%s) has no parts, but weapon selling is enabled. Letting it through...", sec)
-		note = 4
-		return note
+		return 4
 	end
 	
 	printf("[CXV] Checking if weapon's (%s) parts are good enough to be sold...", sec)
@@ -105,14 +102,12 @@ function utils_item.get_item_trade_status(obj, profile)
 	for k,v in pairs(parts) do
 		if string.find(k, "prt_w_") and v < threshold then
 			printf("[CXV] Weapon's (%s) parts are too damaged! | Threshold: %s", sec, threshold)
-			note = 2
-			return note
+			return 2
 		end
 	end
 	
 	printf("[CXV] Weapon (%s) is good enough to be sold!", sec)
-	note = 4
-	return note
+	return 4
 end
 
 base_check_trade = utils_ui.UICellItem.Check_TradeMode
@@ -134,7 +129,7 @@ utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
 		return false
 	end
 		
-	local status = utils_item.get_item_trade_status(obj, profile)
+	local status = zzz_cxv_wpn_armor_selling.utils_item.get_item_trade_status(obj, profile)
 	if status == 4 then
 		local cost
 		if ((IsOutfit(obj) or IsHeadgear(obj)) and can_sell_armor) or (IsWeapon(obj) and can_sell_weapons) then
@@ -144,6 +139,10 @@ utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
 			local exponent = profile.cond_exponent
 			local discount = profile.discount
 			cost = obj:cost() * (discount or 1) * math.pow((obj:condition() * 0.9 + 0.1), exponent > 0 and exponent or 0.75)
+			self.flags.no_trade = false
+			
+			-- TODO: might need to add the "SendScriptCallback(...)" for the on_item_get_cost
+			
 		else
 			cost = utils_item.get_item_cost(obj, profile)
 		end
