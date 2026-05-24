@@ -1,4 +1,4 @@
-## THIS MOD IS NOT FUNCTIONING PROPERLY AND IS UNABLE TO - WILL BE ABANDONED UNTIL FURTHER NOTICE - DO NOT DOWNLOAD (APRIL 6, 2024)
+## THIS MOD IS NOW IN BETA (as of May 23, 2026) - PLEASE REPORT ANY BUGS OR CRASHES
 
 **This mod is made for use with the S.T.A.L.K.E.R. G.A.M.M.A. modpack. Use with any other modpack will not be supported.**
 
@@ -20,7 +20,6 @@ Users who want to sell armor, headgear, or weapons will have the option to throu
 - Are you using vanilla GAMMA Economy? - will turn on/off weapon and armor "hiding" for vendors
 - Allow selling armor/headgear?
 - Allow selling weapons?
-- Min. condition threshold to sell the above? - Weapons with parts need to have all weapon parts and be above the "Sale parts condition minimum" setting in Weapon Parts Overhaul's MCM settings
-- Compatibility for SIGMUND Underhaul - Weapon parts will use SIGMUND's "Maintenance threshold" setting instead of WPO's setting
+- Min. condition threshold to sell the above? - Weapons with parts will also need to have all weapon parts and be above the "Sale parts condition minimum" setting in Weapon Parts Overhaul's MCM settings
 
 Prices are decided by default conditional calculations, so setting your condition threshold lower won't net you good money earlier.
