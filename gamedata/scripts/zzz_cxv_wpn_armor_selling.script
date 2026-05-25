@@ -2,16 +2,37 @@ get_config = zzz_cxv_wpn_armor_selling_mcm.get_config
 vendor_checking = get_config("vanilla_gamma")
 can_sell_armor = get_config("sell_armors")
 can_sell_weapons = get_config("sell_weapons")
-condition_threshold = get_config("condition_threshold")
+armor_condition_threshold = get_config("armor_condition_threshold")
+wpn_condition_threshold = get_config("wpn_condition_threshold")
+armor_price_modifier = get_config("armor_price_modifier")
+wpn_price_modifier = get_config("wpn_price_modifier")
+
+local print_debug_flag = get_config("print_debug_flag")
+
+--------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 
 TradeStatus = utils_item.get_item_trade_status
+BaseItemCost = utils_item.get_item_cost
 
-local print_debug_flag = false
+local wpn_armor_cost = {}
+
 function print_debug(...)
 	if print_debug_flag then
 		printf(...)
 	end
 end
+
+function IsArmor_func(obj)
+	return (IsOutfit(obj) or IsHeadgear(obj))
+end
+
+function IsFirearm_func(obj, sec)
+	return ( IsWeapon(obj) and (not IsItem("fake_ammo_wpn", sec or obj:section())) )
+end
+
+--------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 
 function process_trade_status(obj, profile)
 	
@@ -20,10 +41,12 @@ function process_trade_status(obj, profile)
 	end
 	
 	local sec = obj:section()
+	local is_armor = IsArmor_func(obj)
+	local is_firearm = IsFirearm_func(obj, sec)
 	
 	-- Helps GAMMA to catch any stray armor or weapons
 	if profile.mode == 2 and vendor_checking then	-- vendor checking for armor or weapons and "hiding" them
-		if IsOutfit(obj) or IsHeadgear(obj) or (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+		if is_armor or is_firearm then
 			print_debug("[CXV] Weapon or armor found in trader's inventory (%s)! Being hidden...", sec)
 			return 3
 		end
@@ -36,13 +59,13 @@ function process_trade_status(obj, profile)
 	
 		-- if selling options are off, these will catch all armors and weapons from the player and make them unable to be sold
 		if not can_sell_armor then
-			if IsOutfit(obj) or IsHeadgear(obj) then
+			if is_armor then
 				return 1
 			end
 		end
 		
 		if not can_sell_weapons then
-			if (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+			if is_firearm then
 				return 1
 			end
 		end
@@ -58,19 +81,19 @@ function process_trade_status(obj, profile)
 		return
 	end
 	if cfg:line_exist(list, "gun_oil") and (not cfg:r_string_ex(list,"gun_oil")) then
-		-- print_debug("[CXV] Trader is not valid candidate for buying weapons or armor...")
-		if IsOutfit(obj) or IsHeadgear(obj) then
+		print_debug("[CXV] Trader is not valid candidate for buying weapons or armor...")
+		if is_armor then
 			return 2
-		elseif (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) then
+		elseif is_firearm then
 			return 2
 		end
 		return TradeStatus(obj, profile)
 	end
 	
 	-- Armor checking
-	if (IsOutfit(obj) or IsHeadgear(obj)) and can_sell_armor then
+	if is_armor and can_sell_armor then
 		print_debug("[CXV] Checking if armor (%s) is good enough to be sold...", sec)
-		if obj:condition() < (condition_threshold * 0.01) then
+		if obj:condition() < (armor_condition_threshold * 0.01) then
 			print_debug("[CXV] Armor (%s) is too damaged!", sec)
 			return 2
 		else
@@ -83,12 +106,12 @@ function process_trade_status(obj, profile)
 	
 	-- Weapon checking
 	if not can_sell_weapons then return TradeStatus(obj, profile) end
-	if not (IsWeapon(obj) and (not IsItem("fake_ammo_wpn",sec))) or (obj:parent() and obj:parent():id() ~= 0) then return TradeStatus(obj, profile) end
+	if not (is_firearm) or (obj:parent() and obj:parent():id() ~= 0) then return TradeStatus(obj, profile) end
 	
 	-- personal mod exception :)
 	if z_grok_gun_condition_fixed_cxv_part_logic then
 		print_debug("[CXV] Checking if weapon (%s) is good enough to be sold...", sec)
-		if obj:condition() < (condition_threshold * 0.01) then
+		if obj:condition() < (wpn_condition_threshold * 0.01) then
 			return 2
 		end
 		return 4
@@ -98,7 +121,7 @@ function process_trade_status(obj, profile)
 	local parts = se_load_var(obj:id(), obj:name(), "parts")
 	if not parts then
 		print_debug("[CXV] Weapon (%s) has no parts, checking if it is good enough to be sold...", sec)
-		if obj:condition() < (condition_threshold * 0.01) then
+		if obj:condition() < (wpn_condition_threshold * 0.01) then
 			return 2
 		end
 		print_debug("[CXV] Weapon (%s) is good enough to be sold!", sec)
@@ -120,6 +143,14 @@ function process_trade_status(obj, profile)
 	
 end
 
+function get_new_cost(obj, profile)
+	print_debug("[get new cost] Cost: %s", wpn_armor_cost[obj:id()])
+	return wpn_armor_cost[obj:id()] or BaseItemCost(obj, profile) or 0
+end
+
+--------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+
 function utils_item.get_item_trade_status(obj, profile)
 	
 	if not (obj and profile) then
@@ -127,18 +158,6 @@ function utils_item.get_item_trade_status(obj, profile)
 	end
 	
 	return process_trade_status(obj, profile)
-	
-end
-
-
-local wpn_armor_trading = false
-local wpn_armor_cost = {}
-base_item_cost = utils_item.get_item_cost
-
-function get_new_cost(obj, profile)
-
-	print_debug("[get new cost] Cost: %s", wpn_armor_cost[obj:id()])
-	return wpn_armor_cost[obj:id()] or base_item_cost(obj, profile) or 0
 	
 end
 
@@ -152,12 +171,11 @@ function utils_item.get_item_cost(obj, profile)
 		return wpn_armor_cost[obj:id()]
 	end
 	
-	return base_item_cost(obj, profile)
-	
+	return BaseItemCost(obj, profile)
 end
 
 -- Allows icons to show correct sell state + show price in tooltip
-base_check_trade = utils_ui.UICellItem.Check_TradeMode
+BaseCheckTradeMode = utils_ui.UICellItem.Check_TradeMode
 utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
 	
 	if (self.showcase ~= 0) then
@@ -179,13 +197,16 @@ utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
 	local status = process_trade_status(obj, profile)
 	if status == 4 then
 		local cost
-		if ((IsOutfit(obj) or IsHeadgear(obj)) and can_sell_armor) or (IsWeapon(obj) and can_sell_weapons) then
+		local is_armor = IsArmor_func(obj)
+		local is_firearm = IsFirearm_func(obj, sec)
+		if (is_armor and can_sell_armor) or (is_firearm and can_sell_weapons) then
 			print_debug("[CXV] Armor/Weapon is being given a price: %s", obj:section())
 			
 			-- Using the price calculations from utils_item.get_item_cost
 			local exponent = profile.cond_exponent
 			local discount = profile.discount
 			cost = obj:cost() * (discount or 1) * math.pow((obj:condition() * 0.9 + 0.1), exponent > 0 and exponent or 0.75)
+			cost = cost * ( (is_armor and armor_price_modifier) or (is_firearm and wpn_price_modifier) or 1 )
 			self.flags.no_trade = false
 			
 			wpn_armor_cost[obj:id()] = cost
@@ -216,14 +237,14 @@ utils_ui.UICellItem.Check_TradeMode = function(self, obj, sec)
 end
 
 -- Necessary to ensure that tradable items can actually be moved/transferred to the offer window
-base_is_tradeable = utils_ui.UICellContainer.IsTradable
+BaseIsTradeable = utils_ui.UICellContainer.IsTradable
 utils_ui.UICellContainer.IsTradable = function(self, obj)
 	local ci = obj and self:GetCell_ID(obj:id())
 	return ci and ci:IsShown() and (process_trade_status(obj, self.trade_profile) == 4)
 end
 
 -- Necessary to ensure total sell value correctly takes into account wepaon/armor price
-base_get_cell_cost = utils_ui.UICellContainer.GetCellCost
+BaseGetCellCost = utils_ui.UICellContainer.GetCellCost
 utils_ui.UICellContainer.GetCellCost = function(self, ci)
 	if not (ci and ci:IsShown() and self.trade_profile) then
 		return 0
@@ -247,6 +268,8 @@ utils_ui.UICellContainer.GetCellCost = function(self, ci)
 	return tot_cost
 end
 
+--------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 
 function on_option_change()
 	if ui_mcm then
@@ -254,8 +277,13 @@ function on_option_change()
 		vendor_checking = get_config("vanilla_gamma")
 		can_sell_armor = get_config("sell_armors")
 		can_sell_weapons = get_config("sell_weapons")
-		condition_threshold = get_config("condition_threshold")
+		armor_condition_threshold = get_config("armor_condition_threshold")
+		wpn_condition_threshold = get_config("wpn_condition_threshold")
+		armor_price_modifier = get_config("armor_price_modifier")
+		wpn_price_modifier = get_config("wpn_price_modifier")
+		print_debug_flag = get_config("print_debug_flag")
 		
+		empty_table(wpn_armor_cost)
 	end
 end
 

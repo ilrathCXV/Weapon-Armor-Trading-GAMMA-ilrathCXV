@@ -2,8 +2,11 @@ local defaults = {
 	["vanilla_gamma"] = true,
 	["sell_armors"] = false,
 	["sell_weapons"] = false,
-	["condition_threshold"] = 95,
-	["sigmud_part_threshold"] = false,
+	["armor_condition_threshold"] = 50,
+	["wpn_condition_threshold"] = 83,
+	["armor_price_modifier"] = 1,
+	["wpn_price_modifier"] = 1,
+	["print_debug_flag"] = false,
 }
 
 function get_config(key)
@@ -17,8 +20,11 @@ function on_mcm_load()
 			{ id = "vanilla_gamma", 	  	type = "check", val = 1, 								def = true},
 			{ id = "sell_armors", 	  		type = "check", val = 1, 								def = false},
 			{ id = "sell_weapons", 		  	type = "check", val = 1, 								def = false},
-			{ id = "condition_threshold", 	type = "track", val = 2, min = 1, max = 99, step = 1,  	def = 95 },
-			{ id = "sigmud_part_threshold", type = "check", val = 1, 								def = false},
+			{ id = "armor_condition_threshold", 	type = "track", val = 2, min = 1, max = 99, step = 1,  	def = 50 },
+			{ id = "wpn_condition_threshold", 	type = "track", val = 2, min = 1, max = 99, step = 1,  		def = 83 },
+			{ id = "armor_price_modifier", 	type = "track", val = 2, 	min = 0.01, max = 2, step = 0.01,  	def = 1 },
+			{ id = "wpn_price_modifier", 	type = "track", val = 2, min = 0.01, max = 2, step = 0.01,  	def = 1 },
+			{ id = "print_debug_flag", 		  	type = "check", val = 1, 								def = false},
 		}
 	}
 	return options
